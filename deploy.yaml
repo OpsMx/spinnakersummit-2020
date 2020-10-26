@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  annotations:
+    strategy.spinnaker.io/max-version-history: '1'
+    strategy.spinnaker.io/versioned: 'true'
+  labels:
+    app: sampleapp
+  name: sampleapp
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sampleapp
+  template:
+    metadata:
+      labels:
+        app: sampleapp
+    spec:
+      containers:
+        - image: 'docker.io/nirmalya/summit:${commit_id}'
+          imagePullPolicy: Always
+          name: sampleapp
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sampleapp-svc
+  namespace: default
+spec:
+  ports:
+    - name: sampleapp-svc
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: sampleapp
+  type: LoadBalancer

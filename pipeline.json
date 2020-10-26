@@ -1,0 +1,274 @@
+{
+  "keepWaitingPipelines": false,
+  "lastModifiedBy": "admin",
+  "limitConcurrent": true,
+  "parameterConfig": [
+    {
+      "default": "spinnakersummit-2020",
+      "description": "",
+      "hasOptions": false,
+      "label": "gitrepo",
+      "name": "gitrepo",
+      "options": [
+        {
+          "value": "spinnakersummit-2020"
+        },
+        {
+          "value": ""
+        }
+      ],
+      "pinned": false,
+      "required": false
+    }
+  ],
+  "spelEvaluator": "v4",
+  "stages": [
+    {
+      "account": "default",
+      "alias": "runJob",
+      "application": "summit2020",
+      "cloudProvider": "kubernetes",
+      "consumeArtifactSource": "propertyFile",
+      "credentials": "default",
+      "manifest": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {
+          "labels": {
+            "spinnakerlabel": "maven-build"
+          },
+          "name": "maven-build",
+          "namespace": "default"
+        },
+        "spec": {
+          "backoffLimit": 0,
+          "template": {
+            "spec": {
+              "containers": [
+                {
+                  "args": [
+                    "cd /workspace && rm -fr $GITREPO && git clone https://github.com/OpsMx/$GITREPO.git &&   cd $GITREPO &&  mvn clean install && echo SPINNAKER_PROPERTY_COMMIT_ID=$(git rev-parse --short HEAD)"
+                  ],
+                  "command": [
+                    "bash",
+                    "-c"
+                  ],
+                  "env": [
+                    {
+                      "name": "GITREPO",
+                      "value": "${parameters['gitrepo']}"
+                    }
+                  ],
+                  "image": "maven:3-openjdk-11",
+                  "name": "gitmavenstage",
+                  "volumeMounts": [
+                    {
+                      "mountPath": "/workspace",
+                      "name": "workspace"
+                    }
+                  ]
+                }
+              ],
+              "restartPolicy": "Never",
+              "volumes": [
+                {
+                  "name": "workspace",
+                  "persistentVolumeClaim": {
+                    "claimName": "nfs-share"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "name": "Build",
+      "propertyFile": "gitmavenstage",
+      "refId": "1",
+      "requisiteStageRefIds": [],
+      "source": "text",
+      "type": "runJobManifest"
+    },
+    {
+      "account": "default",
+      "alias": "runJob",
+      "application": "summit2020",
+      "cloudProvider": "kubernetes",
+      "credentials": "default",
+      "manifest": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {
+          "name": "dockerjob",
+          "namespace": "default"
+        },
+        "spec": {
+          "backoffLimit": 0,
+          "template": {
+            "spec": {
+              "containers": [
+                {
+                  "args": [
+                    "--dockerfile=/workspace/${parameters['gitrepo']}/Dockerfile",
+                    "--context=/workspace/${parameters['gitrepo']}",
+                    "--destination=nirmalya/summit:${commit_id}"
+                  ],
+                  "image": "gcr.io/kaniko-project/executor:latest",
+                  "imagePullPolicy": "Always",
+                  "name": "kaniko",
+                  "volumeMounts": [
+                    {
+                      "mountPath": "/workspace",
+                      "name": "workspace"
+                    },
+                    {
+                      "mountPath": "/kaniko/.docker/",
+                      "name": "kaniko-secret"
+                    }
+                  ]
+                }
+              ],
+              "restartPolicy": "Never",
+              "volumes": [
+                {
+                  "name": "workspace",
+                  "persistentVolumeClaim": {
+                    "claimName": "nfs-share"
+                  }
+                },
+                {
+                  "name": "kaniko-secret",
+                  "secret": {
+                    "items": [
+                      {
+                        "key": "config.json",
+                        "path": "config.json"
+                      }
+                    ],
+                    "secretName": "kaniko-secret"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "name": "Create Image",
+      "refId": "2",
+      "requisiteStageRefIds": [
+        "1"
+      ],
+      "source": "text",
+      "type": "runJobManifest"
+    },
+    {
+      "account": "default",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+        {
+          "apiVersion": "apps/v1",
+          "kind": "ReplicaSet",
+          "metadata": {
+            "annotations": {
+              "strategy.spinnaker.io/max-version-history": "1",
+              "strategy.spinnaker.io/versioned": "true"
+            },
+            "labels": {
+              "app": "sampleapp"
+            },
+            "name": "sampleapp",
+            "namespace": "default"
+          },
+          "spec": {
+            "replicas": 1,
+            "selector": {
+              "matchLabels": {
+                "app": "sampleapp"
+              }
+            },
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "sampleapp"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "image": "docker.io/nirmalya/summit:${commit_id}",
+                    "imagePullPolicy": "Always",
+                    "name": "sampleapp",
+                    "ports": [
+                      {
+                        "containerPort": 8080,
+                        "name": "http",
+                        "protocol": "TCP"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "v1",
+          "kind": "Service",
+          "metadata": {
+            "name": "sampleapp-svc",
+            "namespace": "default"
+          },
+          "spec": {
+            "ports": [
+              {
+                "name": "sampleapp-svc",
+                "port": 8080,
+                "protocol": "TCP",
+                "targetPort": 8080
+              }
+            ],
+            "selector": {
+              "app": "sampleapp"
+            },
+            "type": "LoadBalancer"
+          }
+        }
+      ],
+      "moniker": {
+        "app": "summit2020"
+      },
+      "name": "Deploy",
+      "refId": "3",
+      "requisiteStageRefIds": [
+        "2"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "text",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    }
+  ],
+  "triggers": [
+    {
+      "branch": "",
+      "enabled": true,
+      "project": "Nirmalyasen",
+      "secret": "",
+      "slug": "engimatic",
+      "source": "github",
+      "type": "git"
+    },
+    {
+      "enabled": true,
+      "source": "trigger",
+      "type": "webhook"
+    }
+  ],
+  "updateTs": "1603668728000"
+}

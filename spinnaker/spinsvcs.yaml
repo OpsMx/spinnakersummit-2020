@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+   labels:
+     app: spin
+     stack: gate
+   name: spin-gate-np
+spec:
+   type: NodePort
+   ports:
+   -  name: http
+      port: 8084
+      protocol: TCP
+   selector:
+     cluster: "spin-gate"
+---
+apiVersion: v1
+kind: Service
+metadata:
+   labels:
+     app: spin
+     stack: deck
+   name: spin-deck-np
+spec:
+   type: NodePort
+   ports:
+   -  name: http
+      port: 9000
+      protocol: TCP
+   selector:
+     cluster: "spin-deck" 
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  labels:
+    app: spinnaker
+  name: spinnaker-ingress
+spec:
+  backend:
+    serviceName: spin-deck-np
+    servicePort: 9000
+  rules:
+  - http:
+      paths:
+      - path: /login
+        backend:
+          serviceName: spin-gate-np
+          servicePort: 8084
+      - path: /auth/*
+        backend:
+          serviceName: spin-gate-np
+          servicePort: 8084
+
