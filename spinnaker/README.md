@@ -1,11 +1,12 @@
 # Setting up Spinnaker using Helm Chart
 
+Installing Spinnaker using helm chart:
 
-`
+```
 helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 
 helm install -n spinnaker spinnaker stable/spinnaker -f values.yaml
-`
+```
 
 In values.yaml, one can customize:
 

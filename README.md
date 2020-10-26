@@ -6,21 +6,29 @@ Using Spinnaker Run jobs one can run tasks like updating a database, interacting
 
 **Resources**
 
-pipeline.json: The json representation of the pipeline used in the demo
+pipeline.json
+> The json representation of the pipeline used in the demo
 
-src/* : The source could of a simple application
+src/*
+> The source could of a simple application
+
+deploy.yaml
+> Kubernetes manifest to deploy the simple application
+
+Dockerfile
+> Used to build docker image of the Application
 
 **Creating secret for kaniko**
 
 Use the config.json. Update the auth to the correct value. For Dockerhub it is:
-`
+```
 echo -n USER:PASSWORD | base64
-`
+```
 
 And the file as a secret into kubernetes:
-`
+```
 kubectl create secret generic kaniko-secret --from-file=<path to config.json>
-`
+```
 
 More information on Kaniko can be found in https://github.com/GoogleContainerTools/kaniko/blob/master/README.md
 
