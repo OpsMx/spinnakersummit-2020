@@ -1,0 +1,52 @@
+job:
+  preconfigured:
+    kubernetes:
+      - enable: true
+        label: Maven build
+        description: Build github repo using Maven
+        type: mavenbuild
+        cloudProvider: kubernetes
+        account: default
+        application: summit2020
+        waitForCompletion: true
+        parameters:
+            - label: gitrepo
+              name: gitrepo
+              description: the gitrepo to build
+              mapping: 'manifest.spec.template.spec.containers[0].env[0].value'
+              defaultValue: spinnakersummit-2020
+        manifest:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            labels:
+              spinnakerlabel: maven-build
+            name: maven-build
+            namespace: default
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                containers:
+                  - args:
+                      - >-
+                        cd /workspace && rm -fr $GITREPO && git clone
+                        https://github.com/OpsMx/$GITREPO.git &&   cd $GITREPO &&  mvn
+                        clean install && echo SPINNAKER_PROPERTY_COMMIT_ID=$(git rev-parse
+                        --short HEAD)
+                    command:
+                      - bash
+                      - '-c'
+                    env:
+                      - name: GITREPO
+                        value:
+                    image: 'maven:3-openjdk-11'
+                    name: gitmavenstage
+                    volumeMounts:
+                      - mountPath: /workspace
+                        name: workspace
+                restartPolicy: Never
+                volumes:
+                  - name: workspace
+                    persistentVolumeClaim:
+                      claimName: nfs-share
