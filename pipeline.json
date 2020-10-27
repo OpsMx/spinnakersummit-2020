@@ -258,9 +258,9 @@
     {
       "branch": "",
       "enabled": true,
-      "project": "Nirmalyasen",
-      "secret": "",
-      "slug": "engimatic",
+      "project": "OpsMx",
+      "secret": "opsmx",
+      "slug": "spinnakersummit-2020",
       "source": "github",
       "type": "git"
     },
@@ -270,5 +270,5 @@
       "type": "webhook"
     }
   ],
-  "updateTs": "1603668728000"
+  "updateTs": "1603685361000"
 }
