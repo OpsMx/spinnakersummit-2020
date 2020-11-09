@@ -1,5 +1,5 @@
 halyard:
-  spinnakerVersion: 1.22.1	
+  spinnakerVersion: 1.22.1
   image:
     repository: gcr.io/spinnaker-marketplace/halyard
     tag: 1.39.0
@@ -20,7 +20,7 @@ halyard:
     # If you'd rather do an inline script, set create to true and put the content in the data dict like you would a configmap
     # The content will be passed through `tpl`, so value interpolation is supported.
     create: true
-    data: 
+    data:
       myconfig: |
         $HAL_COMMAND config deploy component-sizing deck edit --replicas 2
         $HAL_COMMAND config deploy component-sizing front50 edit --replicas 2
@@ -38,7 +38,7 @@ halyard:
   ## https://www.spinnaker.io/reference/halyard/custom/#custom-profiles
   ## The contents of the files will be passed through `tpl`, so value interpolation is supported.
   additionalProfileConfigMaps:
-    data: 
+    data:
       ## if you're running spinnaker behind a reverse proxy such as a GCE ingress
       ## you may need the following profile settings for the gate profile.
       ## see https://github.com/spinnaker/spinnaker/issues/1630
@@ -51,6 +51,10 @@ halyard:
             remoteIpHeader: X-Forwarded-For
             internalProxies: .*
             httpsServerPort: X-Forwarded-Port
+      clouddriver-local.yml:
+        logging:
+          level:
+            com.netflix.spinnaker.clouddriver: DEBUG
 
   ## Define custom settings for Spinnaker services. Read more for details:
   ## https://www.spinnaker.io/reference/halyard/custom/#custom-service-settings
@@ -65,6 +69,16 @@ halyard:
     #   kubernetes:
     #     podAnnotations:
     #       iam.amazonaws.com/role: <role_arn>
+    # front50.yml:
+    #   artifactId: docker.io/devopsmx/ubi8-oes-front50:version-0.23.1
+    #   env:
+    #     AWS_ACCESS_KEY: spinnakeradmin
+    #     AWS_SECRET_ACCESS_KEY: spinnakeradmin
+    # gate.yml:
+    #   artifactId: docker.io/devopsmx/ubi8-oes-gate:version-1.16.1
+    #   healthEndpoint: /health
+    #   kubernetes:
+    #     useExecHealthCheck: false
 
   ## Populate to provide a custom local BOM for Halyard to use for deployment. Read more for details:
   ## https://www.spinnaker.io/guides/operator/custom-boms/#boms-and-configuration-on-your-filesystem
