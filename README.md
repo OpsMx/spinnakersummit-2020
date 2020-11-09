@@ -10,7 +10,7 @@ pipeline.json
 > The json representation of the pipeline used in the demo
 
 src/*
-> The source could of a simple application
+> The source code of a simple application
 
 deploy.yaml
 > Kubernetes manifest to deploy the simple application
