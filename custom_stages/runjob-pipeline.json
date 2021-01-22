@@ -1,0 +1,90 @@
+{
+  "keepWaitingPipelines": false,
+  "lastModifiedBy": "anonymous",
+  "limitConcurrent": true,
+  "parameterConfig": [
+    {
+      "default": "spinnakersummit-2020",
+      "description": "",
+      "hasOptions": false,
+      "label": "gitrepo",
+      "name": "gitrepo",
+      "options": [
+        {
+          "value": ""
+        }
+      ],
+      "pinned": false,
+      "required": false
+    }
+  ],
+  "spelEvaluator": "v4",
+  "stages": [
+    {
+      "account": "default",
+      "alias": "runJob",
+      "application": "demo",
+      "cloudProvider": "kubernetes",
+      "consumeArtifactSource": "propertyFile",
+      "credentials": "default",
+      "manifest": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "metadata": {
+          "name": "gitcheck",
+          "namespace": "default"
+        },
+        "spec": {
+          "backoffLimit": 1,
+          "template": {
+            "spec": {
+              "containers": [
+                {
+                  "args": [
+                    "git clone https://github.com/OpsMx/$GITREPO.git && cd $GITREPO && echo SPINNAKER_PROPERTY_COMMIT_ID=$(git rev-parse --short HEAD)"
+                  ],
+                  "command": [
+                    "bash",
+                    "-c"
+                  ],
+                  "env": [
+                    {
+                      "name": "GITREPO",
+                      "value": "${parameters['gitrepo']}"
+                    }
+                  ],
+                  "image": "maven:3-openjdk-11",
+                  "name": "gitcheck"
+                }
+              ],
+              "restartPolicy": "Never"
+            }
+          }
+        }
+      },
+      "name": "Git Check",
+      "propertyFile": "gitcheck",
+      "refId": "1",
+      "requisiteStageRefIds": [],
+      "source": "text",
+      "type": "runJobManifest"
+    },
+    {
+      "failOnFailedExpressions": true,
+      "name": "Check Downstream",
+      "refId": "2",
+      "requisiteStageRefIds": [
+        "1"
+      ],
+      "type": "evaluateVariables",
+      "variables": [
+        {
+          "key": "GitCommitId",
+          "value": "${commit_id}"
+        }
+      ]
+    }
+  ],
+  "triggers": [],
+  "updateTs": "1611278277000"
+}
