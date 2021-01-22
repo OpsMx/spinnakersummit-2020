@@ -1,0 +1,99 @@
+webhook:
+  preconfigured:
+  - label: "JIRA: Wait state"
+    type: JiraWaitStage
+    enabled: true
+    description: Custom stage that waits for a specific state on a Jira Issue
+    method: GET
+    url: https://devopsmx.atlassian.net/rest/api/latest/issue/${parameterValues['issue']}
+    customHeaders:
+      Authorization: Basic blahblahblah==
+      Content-Type: application/json
+    failPipeline: true
+    progressJsonPath: "fields.status.name"
+    payload: ""
+    retryStatusCodes:
+      - 200
+    statusJsonPath: "fields.status.name"
+    statusUrlResolution: "getMethod"
+    successStatuses: ${parameterValues['success']}
+    retryStatuses: ${parameterValue['retry']}
+    terminalStatuses: ${parameterValues['terminate']}
+    canceledStatuses: ${parameterValues['cancel']}
+    waitBeforeMonitor: "1"
+    waitForCompletion: true
+    parameters:
+    - label: JIRA Issue ID
+      name: issue
+      description: "The JIRA issue, the default relies on JIRA issue ID extraction"
+      type: string
+      defaultValue: ${jira_issue}
+    - label: JIRA Retry States
+      name: retry
+      description: "JIRA issue states that Retry the stage e.g,: To Do, In Progress, etc."
+      type: string
+      defaultValue: To Do, In Progress
+    - label: JIRA Success States
+      name: success
+      description: "JIRA issue States that progress the pipeline, e.g,: In Verificaiton etc."
+      type: string
+      defaultValue: In Verification
+    - label: JIRA Temination States
+      name: terminate
+      description: "JIRA issue states that terminates the pipeline, e.g,: PR Raised etc."
+      type: string
+      defaultValue: PR Raised
+    - label: JIRA Canceled States
+      name: cancel
+      description: "JIRA issue states that cancel the pipeline e.g,: Done, etc."
+      type: string
+      defaultValue: Done
+job:
+  preconfigured:
+    kubernetes:
+    - label: "Git Commit Id"
+      type: gitCommitId
+      description: Stage that will fetch the latest commit id from git
+      cloudProvider: kubernetes
+      account: default
+      propertyFile: gitcheck
+      credentials: default
+      waitForCompletion: true
+      application: "${execution.application}"
+      parameters:
+        - label: gitrepo
+          name: github repo
+          description: pass pass github repo on which you want to do git clone for the first time or update then onwards.
+          mapping: 'manifest.spec.template.spec.containers[0].env[0].value'
+          defaultValue: spinnakersummit-2020
+        - label: gitbranch
+          name: branch to checkout
+          description: pass pass branch on which you want to do git checkout
+          mapping: 'manifest.spec.template.spec.containers[0].env[1].value'
+          defaultValue: master
+      manifest:
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: gitcheck
+          namespace: default
+        spec:
+          backoffLimit: 0
+          template:
+            spec:
+              restartPolicy: Never
+              containers:
+                - name: gitcheck
+                  image: 'maven:3-openjdk-11'
+                  env:
+                    - name: GITREPO
+                      value:
+                    - name: GITBRANCH
+                      value:
+                  command:
+                    - bash
+                    - '-c'
+                  args:
+                    - >-
+                      git clone https://github.com/OpsMx/$GITREPO.git && cd $GITREPO &&
+                      git checkout -b $GITBRANCH && echo SPINNAKER_PROPERTY_COMMIT_ID=$(git rev-parse --short HEAD)
