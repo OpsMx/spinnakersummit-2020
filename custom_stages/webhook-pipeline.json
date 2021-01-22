@@ -1,0 +1,49 @@
+{
+  "keepWaitingPipelines": false,
+  "lastModifiedBy": "anonymous",
+  "limitConcurrent": true,
+  "parameterConfig": [
+    {
+      "default": "OP-3246",
+      "description": "",
+      "hasOptions": false,
+      "label": "jiraid",
+      "name": "jiraid",
+      "options": [
+        {
+          "value": ""
+        }
+      ],
+      "pinned": false,
+      "required": false
+    }
+  ],
+  "spelEvaluator": "v4",
+  "stages": [
+    {
+      "canceledStatuses": "PR Raised",
+      "customHeaders": {
+        "Authorization": "Basic blahblahblah==",
+        "Content-Type": "application/json"
+      },
+      "failFastStatusCodes": [
+        404
+      ],
+      "method": "GET",
+      "name": "Webhook",
+      "progressJsonPath": "fields.status.name",
+      "refId": "1",
+      "requisiteStageRefIds": [],
+      "retryStatusCodes": [],
+      "statusJsonPath": "fields.status.name",
+      "statusUrlResolution": "getMethod",
+      "successStatuses": "Approved, Done",
+      "terminalStatuses": "Done",
+      "type": "webhook",
+      "url": "https://mycompany.atlassian.net/rest/api/latest/issue/${parameters['jiraid']}",
+      "waitForCompletion": true
+    }
+  ],
+  "triggers": [],
+  "updateTs": "1611289475000"
+}
